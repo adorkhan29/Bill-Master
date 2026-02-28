@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>POS Business Pro</title>
+    
+    <!-- PWA Config -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="apple-touch-icon" href="https://i.ibb.co.com/ksp1tTC0/1770635905436-1.png">
+    
+    <link rel="icon" type="image/png" href="https://i.ibb.co.com/ksp1tTC0/1770635905436-1.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0f172a; --glass-bg: rgba(30, 41, 59, 0.7); --glass-border: rgba(255, 255, 255, 0.1);
+            --neon-blue: #38bdf8; --neon-glow: rgba(56, 189, 248, 0.6); --accent: #818cf8;
+            --text-main: #f1f5f9; --text-muted: #94a3b8; --danger: #ef4444; --success: #10b981; --warning: #f59e0b;
+            --border-blue: #38bdf8; --wa-green: #25D366;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: var(--text-main); padding-bottom: 140px; min-height: 100vh; overflow-x: hidden; }
+        
+        .btn {
+            padding: 12px 20px; border-radius: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            color: white; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--text-muted); transition: 0.2s;
+            position: relative; overflow: hidden;
+        }
+        .btn:hover { background: rgba(255, 255, 255, 0.1); }
+        .ripple { position: absolute; border-radius: 50%; background: rgba(56, 189, 248, 0.4); transform: scale(0); animation: ripple-effect 0.6s linear; pointer-events: none; }
+        @keyframes ripple-effect { to { transform: scale(4); opacity: 0; } }
+
+        .btn-neon { color: var(--neon-blue); border-color: var(--border-blue); }
+        .btn-success-text { color: var(--success); border-color: var(--success); }
+        .btn-danger-text { color: var(--danger); border-color: var(--danger); background: rgba(239, 68, 68, 0.1); }
+        
+        .glass-panel { background: var(--glass-bg); backdrop-filter: blur(12px); border:1px solid var(--glass-border); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border-radius: 16px; }
+        
+        /* Lock Screen */
+        #lockScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #020617; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; padding: 20px; }
+        .lock-card { width: 90%; max-width: 400px; padding: 40px 20px; text-align: center; border: 1px solid var(--neon-blue); box-shadow: 0 0 50px rgba(56, 189, 248, 0.15); }
+        .app-icon-large { width: 80px; height: 80px; border-radius: 20px; margin: 0 auto 15px; display: block; border: 2px solid var(--neon-blue); box-shadow: 0 0 20px var(--neon-glow); animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        
+        .wa-link { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px; border-radius: 10px; background: rgba(37, 211, 102, 0.1); border: 1px solid var(--wa-green); color: var(--wa-green); text-decoration: none; font-weight: 600; margin-bottom: 20px; }
+        .wa-link:hover { background: var(--wa-green); color: #000; }
+
+        .device-box { background: rgba(56, 189, 248, 0.05); color: var(--neon-blue); padding: 15px; font-family: monospace; margin: 15px 0; border-radius: 8px; border: 1px dashed var(--neon-blue); cursor: pointer; letter-spacing: 1px; font-weight: bold; font-size: 1.1rem; }
+        
+        .cust-input { width: 100%; padding: 14px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 10px; color: white; font-size: 1rem; outline: none; margin-bottom: 10px; text-align: center; }
+        .cust-input:focus { border-color: var(--neon-blue); }
+
+        /* Header & Body */
+        header { position: sticky; top: 0; z-index: 100; padding: 10px 15px; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(15px); border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; }
+        .shop-name-display { font-size: 1.4rem; font-weight: 900; letter-spacing: 0.5px; color: var(--neon-blue); text-shadow: 0 0 15px var(--neon-blue); }
+        .header-icon { font-size: 1.3rem; color: var(--text-muted); cursor: pointer; padding: 5px; }
+        .container { max-width: 800px; margin: 15px auto; padding: 0 15px; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        th { color: var(--text-muted); font-weight: 600; }
+        
+        /* Product Rows */
+        .p-row { display: grid; grid-template-columns: 2fr 1fr 0.8fr 1fr; gap: 5px; padding: 12px; padding-bottom: 45px; border-bottom: 1px solid rgba(255,255,255,0.05); position: relative; }
+        .inp-group label { font-size: 0.65rem; color: var(--text-muted); display: block; margin-bottom: 2px; }
+        .inp-group input, .inp-group select { width: 100%; padding: 8px; background: rgba(0,0,0,0.2); border: 1px solid transparent; border-radius: 6px; color: white; font-size: 0.9rem; outline: none; text-align: center; }
+        
+        .disc-toggle-btn { 
+            background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--neon-blue); 
+            width: 100%; height: 100%; border-radius: 6px; font-weight: bold; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; font-size: 1rem;
+        }
+        
+        .btn-del { position: absolute; bottom: 10px; right: 10px; background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); width: 30px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .modal.active { display: flex; }
+        .modal-box { width: 94%; max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 25px; border: 1px solid var(--neon-blue); }
+
+        .report-card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid var(--glass-border); }
+        
+        .inv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+        .file-upload-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px; background: rgba(129, 140, 248, 0.1); border: 1px dashed var(--accent); color: var(--accent); border-radius: 8px; cursor: pointer; margin-bottom: 10px; font-size: 0.9rem; }
+
+        .due-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 15px; margin-bottom: 10px; }
+        .due-card .due-header { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }
+        .due-card .due-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-top: 10px; }
+        .due-card .btn { padding: 8px; font-size: 0.8rem; }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-box { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; text-align: center; }
+        .stat-box h4 { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px; }
+        .stat-box .val { font-size: 1.1rem; font-weight: bold; }
+
+        .live-calc-box { text-align: center; margin-top: -5px; margin-bottom: 15px; min-height: 24px; font-size: 0.95rem; font-weight: 600; }
+
+        @media (max-width: 600px) { 
+            .p-row { grid-template-columns: 1fr 1fr 1fr 1fr; } 
+            .p-row .inp-group:nth-child(1) { grid-column: 1 / -1; } 
+        }
+    </style>
+</head>
+<body>
+
+<!-- LOCK SCREEN -->
+<div id="lockScreen">
+    <div class="lock-card glass-panel">
+        <img src="https://i.ibb.co.com/ksp1tTC0/1770635905436-1.png" class="app-icon-large" alt="POS Pro">
+        <h2 style="margin-bottom: 5px;">POS BUSINESS PRO</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">Universal Edition</p>
+        <a href="#" id="waLink" target="_blank" class="wa-link interactive">
+            <i class="fab fa-whatsapp" style="font-size: 1.2rem;"></i> হোয়াটসঅ্যাপে কি নিন (01614272602)
+        </a>
+        <div style="text-align:left; width: 100%; margin-top: 10px;">
+            <label style="font-size: 0.75rem; color: var(--text-muted);">ডিভাইস আইডি (অফিসে পাঠান):</label>
+            <div class="device-box interactive" id="devIdDisplay" onclick="copyDevId()">GENERATING...</div>
+        </div>
+        <div id="subExpireMsg" style="display:none; background: rgba(239, 68, 68, 0.1); border:1px solid var(--danger); color:var(--danger); padding:10px; border-radius:8px; margin-bottom:15px; font-size:0.85rem;">
+            আপনার সাবস্ক্রিপশনের মেয়াদ শেষ হয়েছে। নতুন কি দিন।
+        </div>
+        <input type="text" id="actKeyInput" class="cust-input" placeholder="এখানে এক্টিভেশন কি লিখুন...">
+        <button class="btn interactive btn-neon" style="width: 100%; justify-content: center; margin-top: 10px;" onclick="verifyKey()">
+            আনলক করুন <i class="fas fa-lock-open"></i>
+        </button>
+        <p id="lockMsg" style="color: var(--danger); font-size: 0.8rem; margin-top: 15px; min-height: 20px;"></p>
+    </div>
+</div>
+
+<!-- Live Banners -->
+<div id="stockDeductionBanner" class="stock-deduction-banner" onclick="this.style.display='none'" style="position:fixed; top:60px; left:50%; transform:translateX(-50%); width:90%; max-width:500px; background:rgba(16, 185, 129, 0.9); color:#000; padding:10px 15px; border-radius:10px; z-index:1050; display:none; font-weight:600;"><div style="display:flex; justify-content:space-between;"><span>স্টক আপডেট হয়েছে</span><i class="fas fa-times"></i></div><div id="stockDeductionList"></div></div>
+<div id="lowStockAlertBanner" class="low-stock-alert-banner" onclick="this.style.display='none'" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); width:90%; max-width:400px; background:var(--danger); color:white; padding:15px; border-radius:10px; z-index:1050; display:none;"><div style="display:flex; justify-content:space-between;"><span>সতর্কতা!</span><i class="fas fa-times"></i></div><div id="lowStockAlertText"></div></div>
+
+<!-- HEADER -->
+<header id="mainHeader" style="display: none;">
+    <div style="width:50px"><img id="headerProfImg" src="https://i.ibb.co.com/ksp1tTC0/1770635905436-1.png" style="width:35px; height:35px; border-radius:50%; border:1px solid var(--neon-blue);"></div>
+    <div style="flex-grow: 1; text-align: center;"><div id="headerShopName" class="shop-name-display">আমার দোকান</div></div>
+    <div style="display:flex; gap:10px;">
+        <i class="fas fa-qrcode header-icon interactive" onclick="openScanner()"></i>
+        <i class="fas fa-book header-icon interactive" style="color:var(--warning)" onclick="openDueBook()" title="বাকির খাতা"></i>
+        <i class="fas fa-chart-pie header-icon interactive" onclick="openReports()"></i>
+        <i class="fas fa-boxes header-icon interactive" onclick="openInventory()"></i>
+        <i class="fas fa-cog header-icon interactive" onclick="openSettings()"></i>
+    </div>
+</header>
+
+<div class="container" id="appBody" style="display: none;">
+    <!-- Main App Content -->
+    <div class="glass-panel" style="padding: 15px; margin-bottom: 15px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="inp-group"><label>কাস্টমার মোবাইল</label><input type="text" id="custNum" class="cust-input" placeholder="017..."></div>
+            <div class="inp-group"><label>নাম</label><input type="text" id="custName" class="cust-input" placeholder="নাম"></div>
+        </div>
+    </div>
+
+    <div class="product-list glass-panel" id="prodList"></div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+        <button class="btn interactive" style="border-color:var(--accent); color:var(--accent)" onclick="addProd()"><i class="fas fa-plus"></i> যোগ</button>
+        <button class="btn interactive" style="border-color:var(--warning); color:var(--warning)" onclick="showHoldUI()"><i class="fas fa-pause"></i> হোল্ড</button>
+        <button class="btn interactive" style="border-color:var(--success); color:var(--success)" onclick="openResumeList()"><i class="fas fa-folder-open"></i> চালু</button>
+    </div>
+
+    <button class="btn interactive btn-neon" style="width: 100%; padding: 15px;" onclick="calcAndScroll()">মোট হিসাব করুন</button>
+
+    <div class="glass-panel" style="padding: 20px; margin-top: 15px; text-align: center;">
+        <div style="color: var(--text-muted); font-size: 0.8rem;">মোট প্রদেয়</div>
+        <div id="grandTotal" style="font-size: 2.5rem; font-weight: 800; color: var(--neon-blue); margin: 10px 0;">৳ 0</div>
+        <div style="margin-bottom: 20px;">
+            <input type="number" id="paidAmt" class="cust-input" style="font-weight:bold" placeholder="পরিশোধিত টাকা" oninput="updateLiveStatus()">
+            <div id="liveStatus" class="live-calc-box"></div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <button class="btn interactive btn-success-text" onclick="showResPopup()">চেক</button>
+            <button class="btn interactive btn-neon" onclick="saveBill()">সেভ বিল</button>
+        </div>
+    </div>
+
+    <div class="section-title" style="margin: 30px 0 15px 0; color:white; border-left: 4px solid var(--neon-blue); padding-left: 10px;">সাম্প্রতিক লেনদেন</div>
+    <div class="glass-panel" style="padding: 5px; overflow-x: auto;">
+        <table>
+            <thead><tr><th>তারিখ</th><th>কাস্টমার</th><th>মোট</th><th>অবস্থা</th></tr></thead>
+            <tbody id="histBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modals -->
+<div class="modal" id="inventoryModal">
+    <div class="modal-box glass-panel">
+        <h3 style="color: var(--neon-blue); margin-bottom: 15px;">ইনভেন্টরি</h3>
+        <label class="file-upload-btn">
+            <input type="file" id="invFile" accept=".xlsx, .xls" style="display:none;" onchange="handleInventoryUpload(event)">
+            <i class="fas fa-file-excel"></i> এক্সেল আপলোড করুন
+        </label>
+        <div style="margin-bottom:15px; border-top:1px solid var(--glass-border); padding-top:15px;">
+            <div class="inp-group" style="margin-bottom:5px;"><input type="text" id="invName" placeholder="পণ্যের নাম"></div>
+            <div class="inp-group" style="margin-bottom:5px;"><input type="text" id="invBarcode" placeholder="বারকোড"></div>
+            <div class="inv-grid">
+                <div class="inp-group"><input type="number" id="invBuy" placeholder="ক্রয় মূল্য"></div>
+                <div class="inp-group"><input type="number" id="invSell" placeholder="বিক্রয় মূল্য"></div>
+                <div class="inp-group"><input type="number" id="invStock" placeholder="স্টক"></div>
+                <div class="inp-group">
+                    <select id="invUnit" style="padding: 8px; text-align-last: center;">
+                        <option value="Pcs">পিস (Pcs)</option>
+                        <option value="Kg">কেজি (Kg)</option>
+                        <option value="Ltr">লিটার (Ltr)</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn interactive btn-success-text" style="width:100%; margin-top:5px;" onclick="addInventoryItem()">যোগ করুন</button>
+        </div>
+        <div id="inventoryList" style="max-height: 35vh; overflow-y: auto;"></div>
+        <button class="btn interactive" style="width: 100%; margin-top: 20px;" onclick="closeModal('inventoryModal')">বন্ধ</button>
+    </div>
+</div>
+
+<!-- Due Book Modal -->
+<div class="modal" id="dueModal">
+    <div class="modal-box glass-panel">
+        <h3 style="color: var(--warning); margin-bottom: 15px; text-align:center;"><i class="fas fa-book"></i> বাকির খাতা</h3>
+        <div id="dueListContent" style="max-height: 60vh; overflow-y: auto;"></div>
+        <button class="btn interactive" style="width: 100%; margin-top: 20px;" onclick="closeModal('dueModal')">বন্ধ</button>
+    </div>
+</div>
+
+<!-- Modal for Paying Due -->
+<div class="modal" id="payDueModal">
+    <div class="modal-box glass-panel" style="text-align:center;">
+        <h3 style="color: var(--success); margin-bottom: 20px;">বকেয়া পরিশোধ</h3>
+        <p id="payDueCustomerName" style="color:var(--text-muted); margin-bottom:10px;"></p>
+        <p>বর্তমান বকেয়া: <span id="payDueCurrentAmount" style="color:var(--danger); font-weight:bold;">0</span> টাকা</p>
+        <input type="hidden" id="payDueIdInput">
+        <input type="number" id="payDueAmountInput" class="cust-input" placeholder="পরিশোধের পরিমাণ লিখুন" style="margin-top:15px;">
+        <button class="btn interactive btn-success-text" style="width:100%; margin-top:10px;" onclick="confirmDuePayment()">
+            <i class="fas fa-check"></i> পরিশোধ নিশ্চিত করুন
+        </button>
+        <button class="btn interactive" style="width:100%; margin-top:5px;" onclick="closeModal('payDueModal')">বাতিল</button>
+    </div>
+</div>
+
+<!-- Reports Modal -->
+<div class="modal" id="reportsModal">
+    <div class="modal-box glass-panel">
+        <h3 style="color: var(--accent); margin-bottom: 20px; text-align: center;">বিক্রয় ও লাভ রিপোর্ট</h3>
+        <div class="stats-grid">
+            <div class="stat-box">
+                <h4>আজকের বিক্রয়</h4>
+                <div class="val" style="color:var(--neon-blue)" id="r-sale-day">0</div>
+                <div style="font-size:0.7rem; color:var(--success)">লাভ: <span id="r-profit-day">0</span></div>
+            </div>
+            <div class="stat-box">
+                <h4>সাপ্তাহিক</h4>
+                <div class="val" style="color:var(--neon-blue)" id="r-sale-week">0</div>
+                <div style="font-size:0.7rem; color:var(--success)">লাভ: <span id="r-profit-week">0</span></div>
+            </div>
+            <div class="stat-box">
+                <h4>মাসিক</h4>
+                <div class="val" style="color:var(--neon-blue)" id="r-sale-month">0</div>
+                <div style="font-size:0.7rem; color:var(--success)">লাভ: <span id="r-profit-month">0</span></div>
+            </div>
+        </div>
+        <div style="height: 200px; margin-bottom:20px;"><canvas id="salesChart"></canvas></div>
+        <div id="salesListContainer" style="max-height:150px; overflow-y:auto; margin-top:10px;"></div>
+        <button class="btn interactive" style="width: 100%; margin-top: 20px;" onclick="closeModal('reportsModal')">বন্ধ</button>
+    </div>
+</div>
+
+<div class="modal" id="settingsModal"><div class="modal-box glass-panel"><h3 style="color: var(--neon-blue); margin-bottom: 20px; text-align: center;">সেটিংস</h3><label>দোকানের নাম</label><input type="text" id="shopNameInput" class="cust-input" style="margin-bottom:5px;"><button class="btn interactive btn-success-text" style="width:100%; margin-top:10px;" onclick="saveSettings()">সেভ করুন</button><hr style="border-color:rgba(255,255,255,0.1); margin:20px 0;"><button class="btn interactive btn-neon" style="width:100%;" onclick="exportData()"><i class="fas fa-file-excel"></i> সেলস রিপোর্ট ডাউনলোড</button><button class="btn interactive" style="width: 100%; margin-top: 10px;" onclick="closeModal('settingsModal')">বন্ধ</button></div></div>
+<div class="modal" id="resumeModal"><div class="modal-box glass-panel"><h3 style="color: var(--accent); margin-bottom: 15px;">হোল্ড বিল</h3><div id="holdListContent" style="max-height: 300px; overflow-y: auto;"></div><button class="btn interactive" style="width: 100%; margin-top: 20px;" onclick="closeModal('resumeModal')">বন্ধ</button></div></div>
+<div class="modal" id="resModal">
+    <div class="modal-box glass-panel" style="text-align: center;">
+        <div id="popIcon" style="font-size: 3rem;">💰</div>
+        <h3 id="popTitle" style="color: var(--text-muted); margin: 10px 0;">অবস্থা</h3>
+        <div id="popVal" style="font-size: 2rem; font-weight:bold; color:var(--neon-blue);">৳ 0</div>
+        <div id="popSubText" style="font-size: 0.9rem; color:var(--text-muted); margin-bottom:15px;"></div>
+        <button class="btn interactive" style="width: 100%; margin-top: 15px;" onclick="closeModal('resModal')">ঠিক আছে</button>
+    </div>
+</div>
+<!-- Details Modal (Updated with Delete Button) -->
+<div class="modal" id="detailsModal">
+    <div class="modal-box glass-panel">
+        <h3 style="color: var(--neon-blue);">বিল ডিটেইলস</h3>
+        <div id="billDetailsContent" style="margin:15px 0;"></div>
+        <button class="btn interactive btn-neon" style="width:100%;" onclick="printBill()"><i class="fas fa-print"></i> প্রিন্ট করুন</button>
+        <button class="btn interactive btn-danger-text" style="width:100%; margin-top:10px;" onclick="deleteBill()"><i class="fas fa-trash"></i> বিল ডিলিট করুন</button>
+        <button class="btn interactive" style="width:100%; margin-top:10px;" onclick="closeModal('detailsModal')">বন্ধ</button>
+    </div>
+</div>
+<div class="modal" id="scannerModal"><div class="modal-box glass-panel"><h3 style="color: var(--neon-blue); margin-bottom: 15px;">বারকোড স্ক্যানার</h3><div id="qr-reader" style="width:100%; background:black;"></div><button class="btn interactive" style="width: 100%; margin-top: 20px;" onclick="closeScanner()">বন্ধ করুন</button></div></div>
+
+<div id="toast-container"></div>
+
+<script>
+    /* --- WATER EFFECT --- */
+    function playWaterSound() { try { const a = new (window.AudioContext || window.webkitAudioContext)(); const o = a.createOscillator(); const g = a.createGain(); o.connect(g); g.connect(a.destination); const now = a.currentTime; o.frequency.setValueAtTime(800, now); o.frequency.exponentialRampToValueAtTime(300, now + 0.1); g.gain.setValueAtTime(0.5, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.1); o.start(now); o.stop(now + 0.1); } catch (e) {} }
+    function createRipple(event) { const button = event.currentTarget; const circle = document.createElement("span"); const diameter = Math.max(button.clientWidth, button.clientHeight); const radius = diameter / 2; const rect = button.getBoundingClientRect(); circle.style.width = circle.style.height = `${diameter}px`; circle.style.left = `${event.clientX - rect.left - radius}px`; circle.style.top = `${event.clientY - rect.top - radius}px`; circle.classList.add("ripple"); const ripple = button.getElementsByClassName("ripple")[0]; if (ripple) ripple.remove(); button.appendChild(circle); playWaterSound(); }
+    document.addEventListener('click', (e) => { const btn = e.target.closest('.btn, .interactive'); if (btn) createRipple(e); }, true);
+
+    /* --- DB & GLOBALS --- */
+    let db = null;
+    const DB_NAME = 'POS_DB_V16_SMART_DUE'; 
+    const SECRET_SALT = "POS_SECURE_2024_IMRAN"; 
+    let rowCount = 0, alertIntervalId = null, salesChartInstance = null, html5QrCode = null;
+
+    function initDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, 1);
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => { db = request.result; resolve(db); };
+            request.onupgradeneeded = (e) => {
+                const database = e.target.result;
+                const stores = ['inventory', 'history', 'customers', 'staff', 'holds', 'settings', 'dues'];
+                stores.forEach(s => {
+                    if (!database.objectStoreNames.contains(s)) {
+                        let store = database.createObjectStore(s, s === 'settings' ? {} : { keyPath: 'id', autoIncrement: true });
+                        if(s === 'inventory') {
+                            store.createIndex('name', 'name', { unique: false });
+                            store.createIndex('barcode', 'barcode', { unique: false });
+                        }
+                    }
+                });
+            };
+        });
+    }
+
+    const genericOp = (storeName, method, data = null, key = null) => new Promise((res, rej) => {
+        const tx = db.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        let req;
+        if (method === 'put') { if (key !== null) req = store.put(data, key); else req = store.put(data); }
+        else if (method === 'get') { req = store.get(key); }
+        else if (method === 'delete') { req = store.delete(key); }
+        else if (method === 'add') { req = store.add(data); }
+        else { req = store[method](); }
+        req.onsuccess = () => res(req.result);
+        req.onerror = () => rej(req.error);
+    });
+
+    const getAll = s => genericOp(s, 'getAll');
+    const getById = (s, id) => genericOp(s, 'get', null, id);
+    const add = (s, d) => genericOp(s, 'add', d);
+    const put = (s, d) => genericOp(s, 'put', d);
+    const remove = (s, id) => genericOp(s, 'delete', null, id);
+    const getSetting = key => genericOp('settings', 'get', null, key);
+    const setSetting = (key, val) => genericOp('settings', 'put', val, key);
+
+    /* --- SYSTEM INIT & LICENSING --- */
+    async function initSystem() {
+        try {
+            let devId = await getSetting('dev_id');
+            if (!devId) { devId = 'POS-' + Math.random().toString(36).substr(2, 9).toUpperCase(); await setSetting('dev_id', devId); }
+            document.getElementById('devIdDisplay').innerText = devId;
+            
+            const waLink = document.getElementById('waLink');
+            waLink.href = `https://wa.me/8801614272602?text=হ্যালো, আমি POS App এর এক্টিভেশন কি নিতে চাই। আমার ডিভাইস আইডি: ${devId}`;
+
+            const isActive = await getSetting('is_active');
+            const actDate = await getSetting('act_date');
+            const duration = await getSetting('duration_days');
+
+            if (isActive === 'true' && actDate && duration) {
+                const now = Date.now();
+                const expiry = parseInt(actDate) + (parseInt(duration) * 24 * 60 * 60 * 1000);
+                
+                if (now < expiry) { unlockApp(); } 
+                else {
+                    await setSetting('is_active', 'false'); await setSetting('act_date', null); await setSetting('duration_days', null);
+                    const newId = 'POS-' + Math.random().toString(36).substr(2, 9).toUpperCase(); await setSetting('dev_id', newId);
+                    document.getElementById('devIdDisplay').innerText = newId;
+                    document.getElementById('subExpireMsg').style.display = 'block';
+                    waLink.href = `https://wa.me/8801614272602?text=হ্যালো, আমি POS App এর এক্টিভেশন কি নিতে চাই। আমার ডিভাইস আইডি: ${newId}`;
+                    showToast("সাবস্ক্রিপশন মেয়াদ শেষ!");
+                }
+            } else { document.getElementById('lockScreen').style.display = 'flex'; }
+        } catch (e) { console.error("Init Error:", e); }
+    }
+
+    async function copyDevId() { const t = document.getElementById('devIdDisplay').innerText; if(navigator.clipboard) await navigator.clipboard.writeText(t); showToast("ডিভাইস আইডি কপি হয়েছে"); }
+
+    async function verifyKey() {
+        const inputKey = document.getElementById('actKeyInput').value.trim();
+        const devId = document.getElementById('devIdDisplay').innerText;
+        if (!inputKey) return showToast("কি লিখুন");
+        try {
+            const decoded = atob(inputKey);
+            const parts = decoded.split('|');
+            if (parts.length === 4) {
+                if (parts[0] === devId && parts[1] === "VALID" && parts[3] === SECRET_SALT) {
+                    await setSetting('is_active', 'true');
+                    await setSetting('act_date', Date.now().toString());
+                    await setSetting('duration_days', parts[2]);
+                    showToast(`${parts[2]} দিনের জন্য সফলভাবে আনলক হয়েছে!`);
+                    unlockApp();
+                } else { document.getElementById('lockMsg').innerText = "ভুল কি বা ডিভাইস আইডি মিলছে না!"; }
+            } else { document.getElementById('lockMsg').innerText = "অবৈধ কি ফরম্যাট!"; }
+        } catch (e) { document.getElementById('lockMsg').innerText = "কি ডিকোড করা যাচ্ছে না!"; }
+    }
+
+    async function unlockApp() { document.getElementById('lockScreen').style.display = 'none'; document.getElementById('mainHeader').style.display = 'flex'; document.getElementById('appBody').style.display = 'block'; const n = await getSetting('shop_name'); if(n) document.getElementById('headerShopName').innerText = n; addProd(); loadHistory(); initStockAlertTimer(); checkStockAndAlert(); }
+
+    /* --- ALERT SYSTEM --- */
+    function speak(text) { if ('speechSynthesis' in window) { const u = new SpeechSynthesisUtterance(text); u.lang = 'bn-BD'; u.rate = 0.9; speechSynthesis.speak(u); } }
+    async function checkStockAndAlert() { const items = await getAll('inventory'); const lowItems = items.filter(i => i.stock < 5 && i.stock > 0); if (lowItems.length > 0) { const msg = `আপনার ${lowItems[0].name} পণ্যটি কম আছে।`; document.getElementById('lowStockAlertText').innerText = msg; document.getElementById('lowStockAlertBanner').style.display = 'flex'; speak(msg); } }
+    async function initStockAlertTimer() { if(alertIntervalId) clearInterval(alertIntervalId); const intervalMins = parseInt(await getSetting('alert_interval')) || 0; if (intervalMins > 0) alertIntervalId = setInterval(checkStockAndAlert, intervalMins * 60 * 1000); }
+
+    /* --- CORE FUNCTIONS --- */
+    function showToast(m) { const c = document.getElementById('toast-container'); const t = document.createElement('div'); t.className = 'toast'; t.innerText = m; t.style.cssText = "position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:#000; color:#fff; padding:10px 20px; border-radius:20px; z-index:9999; border:1px solid #38bdf8;"; c.appendChild(t); setTimeout(() => t.remove(), 2500); }
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    
+    async function saveSettings() { const n = document.getElementById('shopNameInput').value; await setSetting('shop_name', n); document.getElementById('headerShopName').innerText = n; showToast("সেটিংস সেভ হয়েছে"); closeModal('settingsModal'); }
+    
+    function openInventory() { openModal('inventoryModal'); loadInventoryList(); }
+    function openReports() { openModal('reportsModal'); loadReportData(); }
+    function openSettings() { openModal('settingsModal'); }
+    function openResumeList() { openModal('resumeModal'); loadHolds(); }
+
+    /* --- INVENTORY MANAGEMENT --- */
+    async function handleInventoryUpload(event) {
+        const file = event.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                let count = 0;
+                for(let row of jsonData) {
+                    const name = row['Name'] || row['নাম'] || row['name'];
+                    const buy = row['Buy'] || row['ক্রয়'] || row['buy'] || 0;
+                    const sell = row['Sell'] || row['বিক্রয়'] || row['sell'] || 0;
+                    const stock = row['Stock'] || row['স্টক'] || row['stock'] || 0;
+                    const unit = row['Unit'] || row['ইউনিট'] || row['unit'] || 'Pcs';
+                    const barcode = row['Barcode'] || row['বারকোড'] || row['barcode'] || '';
+                    if(name) {
+                        const existing = (await getAll('inventory')).find(i => i.name.toLowerCase() === name.toLowerCase() || (barcode && i.barcode === barcode));
+                        if(existing) {
+                            existing.stock += parseFloat(stock); existing.buy = parseFloat(buy); existing.sell = parseFloat(sell); existing.unit = unit; existing.barcode = barcode;
+                            await put('inventory', existing);
+                        } else { await add('inventory', { name, buy: parseFloat(buy), sell: parseFloat(sell), stock: parseFloat(stock), unit, barcode }); }
+                        count++;
+                    }
+                }
+                showToast(`${count} পণ্য ইম্পোর্ট হয়েছে`);
+                loadInventoryList();
+            } catch(err) { showToast("এক্সেল ফাইল পড়া যাচ্ছে না"); }
+        };
+        reader.readAsArrayBuffer(file);
+        event.target.value = ''; 
+    }
+
+    async function addInventoryItem() {
+        const n = document.getElementById('invName').value.trim();
+        const b = parseFloat(document.getElementById('invBuy').value) || 0;
+        const s = parseFloat(document.getElementById('invSell').value) || 0;
+        const st = parseFloat(document.getElementById('invStock').value) || 0;
+        const u = document.getElementById('invUnit').value;
+        const bc = document.getElementById('invBarcode').value.trim();
+        if(!n) return showToast("নাম দিন");
+        const existing = await getAll('inventory');
+        const found = existing.find(i => i.name.toLowerCase() === n.toLowerCase() || (bc && i.barcode === bc));
+        if(found) { found.stock += st; found.buy = b; found.sell = s; found.unit = u; found.barcode = bc; await put('inventory', found); }
+        else await add('inventory', {name: n, buy: b, sell: s, stock: st, unit: u, barcode: bc});
+        loadInventoryList();
+        showToast("সেভ হয়েছে");
+        document.getElementById('invName').value = ''; document.getElementById('invBuy').value = ''; 
+        document.getElementById('invSell').value = ''; document.getElementById('invStock').value = ''; 
+        document.getElementById('invBarcode').value = '';
+    }
+
+    async function loadInventoryList() {
+        const list = document.getElementById('inventoryList');
+        const items = await getAll('inventory');
+        list.innerHTML = '';
+        items.forEach(i => { list.innerHTML += `<div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid rgba(255,255,255,0.1);"><span>${i.name} (${i.unit})</span><span style="color:var(--neon-blue)">${i.stock}</span></div>`; });
+    }
+
+    /* --- BILLING --- */
+    function addProd(data = null) {
+        rowCount++;
+        const div = document.createElement('div');
+        div.className = 'p-row';
+        div.id = `r-${rowCount}`;
+        div.innerHTML = `
+            <div class="inp-group"><label>আইটেম</label><input type="text" class="p-name" value="${data?.n || ''}" placeholder="নাম/বারকোড" onblur="autoFill(this)"></div>
+            <div class="inp-group"><label>দাম</label><input type="number" class="p-price" value="${data?.p || ''}" placeholder="0" oninput="calcTotal(); updateLiveStatus();"></div>
+            <div class="inp-group"><label>পরিমাণ</label><input type="number" class="p-qty" value="${data?.q || 1}" placeholder="1" oninput="calcTotal(); updateLiveStatus();"></div>
+            <div style="display:flex; gap:2px;">
+                <div class="inp-group" style="flex:2"><label>ডিস</label><input type="number" class="p-disc" value="${data?.dVal || ''}" placeholder="0" oninput="calcTotal(); updateLiveStatus();"></div>
+                <div class="inp-group" style="flex:1; display:flex; align-items:flex-end;">
+                    <button type="button" class="disc-toggle-btn interactive" onclick="toggleDiscType(this)" data-type="${data?.dType || '%'}">${data?.dType || '%'}</button>
+                </div>
+            </div>
+            <div class="btn-del interactive" onclick="delRow('r-${rowCount}')"><i class="fas fa-times"></i></div>`;
+        document.getElementById('prodList').appendChild(div);
+        const btn = div.querySelector('.disc-toggle-btn');
+        btn.innerText = btn.dataset.type;
+    }
+
+    function toggleDiscType(btn) {
+        const current = btn.dataset.type;
+        if(current === '%') { btn.dataset.type = '৳'; btn.innerText = '৳'; }
+        else { btn.dataset.type = '%'; btn.innerText = '%'; }
+        calcTotal();
+        updateLiveStatus();
+    }
+
+    async function autoFill(input) {
+        const val = input.value.trim(); if(!val) return;
+        const row = input.closest('.p-row');
+        const items = await getAll('inventory');
+        const item = items.find(i => i.name.toLowerCase() === val.toLowerCase() || i.barcode === val);
+        if(item) { 
+            row.querySelector('.p-price').value = item.sell; 
+            row.querySelector('.p-name').value = item.name; 
+            calcTotal(); 
+            updateLiveStatus();
+        }
+    }
+
+    function delRow(id) { 
+        document.getElementById(id).remove(); 
+        calcTotal(); 
+        updateLiveStatus(); 
+    }
+    
+    function calcTotal() {
+        let total = 0;
+        document.querySelectorAll('.p-row').forEach(r => {
+            const p = parseFloat(r.querySelector('.p-price').value) || 0;
+            const q = parseFloat(r.querySelector('.p-qty').value) || 0;
+            const dVal = parseFloat(r.querySelector('.p-disc').value) || 0;
+            const dType = r.querySelector('.disc-toggle-btn').dataset.type;
+            
+            let lineTotal = p * q;
+            if(dType === '%') lineTotal = lineTotal * (1 - dVal/100);
+            else lineTotal = lineTotal - dVal;
+            
+            total += Math.max(0, lineTotal);
+        });
+        document.getElementById('grandTotal').innerText = '৳ ' + total.toFixed(2);
+        return total;
+    }
+
+    function calcAndScroll() { calcTotal(); updateLiveStatus(); document.getElementById('paidAmt').scrollIntoView({behavior:'smooth'}); }
+
+    function updateLiveStatus() {
+        const totalText = document.getElementById('grandTotal').innerText;
+        const total = parseFloat(totalText.replace('৳ ', '')) || 0;
+        const paid = parseFloat(document.getElementById('paidAmt').value) || 0;
+        const diff = paid - total;
+        const statusDiv = document.getElementById('liveStatus');
+
+        if (paid === 0) {
+            statusDiv.innerHTML = '';
+            return;
+        }
+
+        if (diff > 0) {
+            statusDiv.innerHTML = `<span style="color:var(--warning)">ফেরত দিন: ৳ ${diff.toFixed(2)}</span>`;
+        } else if (diff < 0) {
+            statusDiv.innerHTML = `<span style="color:var(--danger)">বকেয়া: ৳ ${Math.abs(diff).toFixed(2)}</span>`;
+        } else {
+            statusDiv.innerHTML = `<span style="color:var(--success)">সম্পূর্ণ পরিশোধ</span>`;
+        }
+    }
+
+    async function saveBill() {
+        const t = calcTotal(); if(t<=0) return showToast("আইটেম যোগ করুন");
+        const p = parseFloat(document.getElementById('paidAmt').value) || 0;
+        const num = document.getElementById('custNum').value.trim();
+        const custName = document.getElementById('custName').value.trim() || "কাস্টমার";
+        
+        if(!num) return showToast("মোবাইল নম্বর দিন");
+        if(num.length < 11) return showToast("সঠিক মোবাইল নম্বর দিন");
+
+        const items = [];
+        const deductionList = [];
+        const rows = document.querySelectorAll('.p-row');
+        
+        const invs = await getAll('inventory');
+
+        for(const r of rows) {
+            const n = r.querySelector('.p-name').value; if(!n) continue;
+            const q = parseFloat(r.querySelector('.p-qty').value) || 0;
+            const pr = parseFloat(r.querySelector('.p-price').value) || 0;
+            
+            const inv = invs.find(i => i.name.toLowerCase() === n.toLowerCase());
+            let costPrice = 0;
+            if(inv) { 
+                inv.stock -= q; 
+                await put('inventory', inv); 
+                deductionList.push({name:n, deduct:q});
+                costPrice = inv.buy || 0;
+            }
+            items.push({name:n, qty:q, price:pr, cost: costPrice});
+        }
+
+        const diff = p - t;
+        const bill = { 
+            ts: Date.now(), 
+            timestampStr: new Date().toLocaleString('en-GB'), 
+            total: t.toFixed(2), 
+            paid: p.toFixed(2), 
+            due: diff < 0 ? Math.abs(diff).toFixed(2) : 0, 
+            status: diff < 0 ? "বাকি" : "পরিশোধিত", 
+            custNum: num, 
+            custName: custName, 
+            items: items 
+        };
+        await add('history', bill);
+        
+        if(diff < 0) {
+            const dueAmount = Math.abs(diff);
+            const dues = await getAll('dues');
+            const existingDue = dues.find(d => d.phone === num);
+            
+            if(existingDue) {
+                existingDue.amount += dueAmount;
+                existingDue.name = custName;
+                await put('dues', existingDue);
+                showToast("বকেয়া আপডেট হয়েছে");
+            } else {
+                await add('dues', { phone: num, name: custName, amount: dueAmount });
+                showToast("বাকির খাতায় জমা হয়েছে");
+            }
+        }
+
+        if(deductionList.length > 0) {
+            const list = document.getElementById('stockDeductionList');
+            list.innerHTML = deductionList.map(i => `<div>${i.name}: -${i.deduct}</div>`).join('');
+            document.getElementById('stockDeductionBanner').style.display = 'flex';
+            setTimeout(() => document.getElementById('stockDeductionBanner').style.display = 'none', 3000);
+        }
+
+        resetForm();
+        loadHistory();
+        checkStockAndAlert();
+    }
+
+    function resetForm() { 
+        document.getElementById('prodList').innerHTML = ''; 
+        addProd(); 
+        document.getElementById('paidAmt').value=''; 
+        document.getElementById('grandTotal').innerText='৳ 0'; 
+        document.getElementById('custNum').value=''; 
+        document.getElementById('custName').value=''; 
+        document.getElementById('liveStatus').innerHTML = ''; 
+    }
+    
+    async function loadHistory() {
+        const hist = await getAll('history');
+        const tb = document.getElementById('histBody');
+        tb.innerHTML = '';
+        hist.reverse().slice(0, 15).forEach(b => {
+            let color = 'var(--success)';
+            let statusText = b.status;
+            if (b.status === "বকেয়া পরিশোধ") {
+                color = 'var(--accent)'; 
+                statusText = "পরিশোধ"; 
+            } else if (b.status === "বাকি") {
+                color = 'var(--danger)';
+            }
+            tb.innerHTML += `<tr onclick="viewDetails(${b.id})" style="cursor:pointer">
+                <td>${b.timestampStr.split(',')[0]}</td>
+                <td>${b.custName || b.custNum}</td>
+                <td>৳${b.total}</td>
+                <td style="color:${color}; font-weight:bold;">${statusText}</td>
+            </tr>`;
+        });
+    }
+    
+    let currentBillForPrint = null;
+    async function viewDetails(id) {
+        const bill = (await getAll('history')).find(b => b.id === id);
+        if(!bill) return;
+        currentBillForPrint = bill;
+        let html = `<div style="margin-bottom:10px">কাস্টমার: ${bill.custName || bill.custNum}<br>তারিখ: ${bill.timestampStr}</div>`;
+        bill.items.forEach(it => { html += `<div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.1);"><span>${it.name} x${it.qty}</span><span>৳${(it.price*it.qty).toFixed(2)}</span></div>`; });
+        html += `<div style="text-align:right; margin-top:10px; font-weight:bold">মোট: ৳${bill.total}</div>`;
+        html += `<div style="text-align:right; color:var(--success)">পরিশোধ: ৳${bill.paid}</div>`;
+        if(bill.due > 0) html += `<div style="text-align:right; color:var(--danger)">বকেয়া: ৳${bill.due}</div>`;
+        document.getElementById('billDetailsContent').innerHTML = html;
+        openModal('detailsModal');
+    }
+    
+    // New: Delete Bill Function
+    async function deleteBill() {
+        if(!currentBillForPrint) return;
+        if(confirm("আপনি কি নিশ্চিত যে এই বিলটি মুছে ফেলতে চান?")) {
+            await remove('history', currentBillForPrint.id);
+            showToast("বিল ডিলিট হয়েছে");
+            closeModal('detailsModal');
+            loadHistory();
+        }
+    }
+
+    function printBill() {
+        if(!currentBillForPrint) return;
+        const b = currentBillForPrint;
+        let win = window.open('', '', 'height=600,width=400');
+        win.document.write(`<html><head><title>Bill</title><style>body{font-family:sans-serif; padding:20px;}</style></head><body>`);
+        win.document.write(`<h2 style="text-align:center">${document.getElementById('headerShopName').innerText}</h2>`);
+        win.document.write(`<p>Date: ${b.timestampStr}<br>Customer: ${b.custName || b.custNum}</p><hr>`);
+        b.items.forEach(it => { win.document.write(`<p style="display:flex; justify-content:space-between"><span>${it.name} x${it.qty}</span><span>৳${(it.price*it.qty).toFixed(2)}</span></p>`); });
+        win.document.write(`<hr><h3>Total: ৳${b.total}</h3>`);
+        win.document.write(`<p>Paid: ৳${b.paid} | Due: ৳${b.due}</p>`);
+        win.document.write(`</body></html>`);
+        win.document.close();
+        win.print();
+    }
+    
+    async function loadReportData() {
+        const hist = await getAll('history');
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const startOfWeek = startOfDay - (now.getDay() * 24 * 60 * 60 * 1000); 
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
+        let salesDay = 0, profitDay = 0, salesWeek = 0, profitWeek = 0, salesMonth = 0, profitMonth = 0;
+        const itemMap = {};
+
+        hist.forEach(b => {
+            const bTime = b.ts;
+            const bTotal = parseFloat(b.total);
+            let billProfit = 0;
+            b.items.forEach(it => { billProfit += (it.price - (it.cost || 0)) * it.qty; if(!itemMap[it.name]) itemMap[it.name]=0; itemMap[it.name] += it.qty; });
+            if(bTime >= startOfDay) { salesDay += bTotal; profitDay += billProfit; }
+            if(bTime >= startOfWeek) { salesWeek += bTotal; profitWeek += billProfit; }
+            if(bTime >= startOfMonth) { salesMonth += bTotal; profitMonth += billProfit; }
+        });
+
+        document.getElementById('r-sale-day').innerText = "৳" + salesDay.toFixed(0);
+        document.getElementById('r-profit-day').innerText = "৳" + profitDay.toFixed(0);
+        document.getElementById('r-sale-week').innerText = "৳" + salesWeek.toFixed(0);
+        document.getElementById('r-profit-week').innerText = "৳" + profitWeek.toFixed(0);
+        document.getElementById('r-sale-month').innerText = "৳" + salesMonth.toFixed(0);
+        document.getElementById('r-profit-month').innerText = "৳" + profitMonth.toFixed(0);
+
+        const sorted = Object.entries(itemMap).sort((a,b) => b[1] - a[1]);
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        if(salesChartInstance) salesChartInstance.destroy();
+        salesChartInstance = new Chart(ctx, { type: 'bar', data: { labels: sorted.slice(0,5).map(i=>i[0]), datasets: [{ data: sorted.slice(0,5).map(i=>i[1]), backgroundColor: ['#38bdf8', '#818cf8', '#f59e0b', '#10b981', '#ef4444'] }] }, options: { plugins: { legend: { display: false } } } });
+        document.getElementById('salesListContainer').innerHTML = sorted.map(i => `<div style="display:flex; justify-content:space-between; padding:5px 0; font-size:0.8rem;"><span>${i[0]}</span><span style="color:var(--success)">${i[1]} পিস</span></div>`).join('');
+    }
+
+    async function showHoldUI() { const num = document.getElementById('custNum').value; if(!num) return showToast("নম্বর দিন"); const items = []; document.querySelectorAll('.p-row').forEach(r => { const n = r.querySelector('.p-name').value; if(n) items.push({n, p: r.querySelector('.p-price').value, q: r.querySelector('.p-qty').value, dVal: r.querySelector('.p-disc').value, dType: r.querySelector('.disc-toggle-btn').dataset.type}); }); await add('holds', {num, items, total: calcTotal()}); showToast("হোল্ড হয়েছে"); resetForm(); }
+    async function loadHolds() { const holds = await getAll('holds'); document.getElementById('holdListContent').innerHTML = holds.map(h => `<div style="background:rgba(255,255,255,0.05); padding:10px; margin-bottom:5px; display:flex; justify-content:space-between;"><span>${h.num} (৳${h.total.toFixed(2)})</span><button class="btn interactive btn-neon" style="padding:2px 8px" onclick="loadHold(${h.id})">লোড</button></div>`).join(''); }
+    async function loadHold(id) { const h = await getById('holds', id); document.getElementById('custNum').value = h.num; document.getElementById('prodList').innerHTML = ''; h.items.forEach(i => addProd(i)); await remove('holds', id); closeModal('resumeModal'); calcTotal(); updateLiveStatus(); }
+
+    function showResPopup() { 
+        const t = calcTotal(); 
+        updateLiveStatus(); 
+        const p = parseFloat(document.getElementById('paidAmt').value) || 0;
+        const diff = p - t;
+        const icon = document.getElementById('popIcon');
+        const title = document.getElementById('popTitle');
+        const val = document.getElementById('popVal');
+        const sub = document.getElementById('popSubText');
+
+        if (diff > 0) {
+            icon.innerText = '💵'; title.innerText = 'ফেরত দিন'; val.innerText = '৳ ' + diff.toFixed(2); val.style.color = 'var(--warning)';
+            sub.innerText = `মোট: ${t.toFixed(2)} | দিলেন: ${p.toFixed(2)}`;
+        } else if (diff < 0) {
+            icon.innerText = '📝'; title.innerText = 'বকেয়া আছে'; val.innerText = '৳ ' + Math.abs(diff).toFixed(2); val.style.color = 'var(--danger)';
+            sub.innerText = `মোট: ${t.toFixed(2)} | দিলেন: ${p.toFixed(2)}`;
+        } else {
+            icon.innerText = '✅'; title.innerText = 'সম্পূর্ণ পরিশোধ'; val.innerText = '৳ ' + t.toFixed(2); val.style.color = 'var(--success)'; sub.innerText = '';
+        }
+        openModal('resModal'); 
+    }
+
+    async function exportData() { const hist = await getAll('history'); if(hist.length === 0) return showToast("কোনো ডাটা নেই"); const data = hist.map(h => ({ Date: h.timestampStr, Customer: h.custNum, Total: h.total, Paid: h.paid, Due: h.due, Status: h.status })); const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Sales Report"); XLSX.writeFile(wb, "POS_Sales_Report.xlsx"); showToast("এক্সেল ডাউনলোড হচ্ছে"); }
+
+    function openScanner() {
+        openModal('scannerModal');
+        Html5Qrcode.getCameras().then(devices => {
+            if (devices && devices.length) {
+                html5QrCode = new Html5Qrcode("qr-reader");
+                html5QrCode.start(devices[0].id, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, () => {});
+            }
+        }).catch(err => { document.getElementById('qr-reader').innerHTML = "<p style='color:red; text-align:center; padding:20px;'>ক্যামেরা পাওয়া যাচ্ছে না।</p>"; });
+    }
+
+    async function onScanSuccess(decodedText) {
+        const items = await getAll('inventory');
+        const found = items.find(i => i.barcode === decodedText || i.name.toLowerCase() === decodedText.toLowerCase());
+        const rows = document.querySelectorAll('.p-row');
+        if(rows.length > 0) {
+            const lastRow = rows[rows.length - 1];
+            lastRow.querySelector('.p-name').value = decodedText;
+            autoFill(lastRow.querySelector('.p-name')); 
+            if(found) showToast(`পণ্য পাওয়া গেছে: ${found.name}`);
+        }
+        html5QrCode.stop().then(() => closeModal('scannerModal'));
+    }
+
+    function closeScanner() { if(html5QrCode && html5QrCode.isScanning) html5QrCode.stop(); closeModal('scannerModal'); }
+
+    /* --- DUE BOOK FUNCTIONS --- */
+    async function openDueBook() { openModal('dueModal'); loadDueList(); }
+
+    async function loadDueList() {
+        const list = document.getElementById('dueListContent');
+        const dues = await getAll('dues');
+        list.innerHTML = '';
+        if(dues.length === 0) { list.innerHTML = '<p style="text-align:center; color:var(--text-muted); margin-top:20px;">কোনো বকেয়া নেই।</p>'; return; }
+        dues.forEach(d => {
+            const phoneClean = d.phone.replace(/[^0-9]/g, '');
+            const shopName = document.getElementById('headerShopName').innerText;
+            const msg = `প্রিয় ${d.name}, আপনার ${shopName}-এ ${d.amount} টাকা বকেয়া আছে। অনুগ্রহ করে পরিশোধ করুন।`;
+            list.innerHTML += `
+                <div class="due-card">
+                    <div class="due-header">
+                        <div><div style="font-weight:bold; font-size:1.1rem;">${d.name}</div><div style="color:var(--text-muted); font-size:0.85rem;">${d.phone}</div></div>
+                        <div style="color:var(--danger); font-weight:bold; font-size:1.2rem;">৳ ${d.amount.toFixed(2)}</div>
+                    </div>
+                    <div class="due-actions">
+                        <a href="tel:+88${phoneClean}" class="btn btn-success-text" style="text-decoration:none;"><i class="fas fa-phone"></i> কল</a>
+                        <a href="https://wa.me/88${phoneClean}?text=${encodeURIComponent(msg)}" target="_blank" class="btn" style="background:var(--wa-green); color:#000; border-color:var(--wa-green); text-decoration:none;"><i class="fab fa-whatsapp"></i> ম্যাসেজ</a>
+                        <button class="btn btn-danger-text" onclick="openPayDueModal(${d.id})"><i class="fas fa-hand-holding-usd"></i> পরিশোধ</button>
+                    </div>
+                </div>`;
+        });
+    }
+
+    function openPayDueModal(id) {
+        getById('dues', id).then(due => {
+            document.getElementById('payDueIdInput').value = id;
+            document.getElementById('payDueCustomerName').innerText = due.name + " (" + due.phone + ")";
+            document.getElementById('payDueCurrentAmount').innerText = due.amount.toFixed(2);
+            document.getElementById('payDueAmountInput').value = ''; 
+            openModal('payDueModal');
+        });
+    }
+
+    // Updated Logic: Updates original bill status
+    async function confirmDuePayment() {
+        const dueId = parseInt(document.getElementById('payDueIdInput').value);
+        const amountToPay = parseFloat(document.getElementById('payDueAmountInput').value);
+        
+        if (!amountToPay || amountToPay <= 0) return showToast("সঠিক পরিমাণ লিখুন");
+
+        const dueEntry = await getById('dues', dueId);
+        if (!dueEntry) return showToast("ডাটা পাওয়া যায়নি");
+
+        const remaining = dueEntry.amount - amountToPay;
+        
+        // 1. Update Due Book
+        if (remaining <= 0) {
+            await remove('dues', dueId);
+            showToast("সম্পূর্ণ বকেয়া পরিশোধ হয়েছে");
+        } else {
+            dueEntry.amount = remaining;
+            await put('dues', dueEntry);
+            showToast("বকেয়া আপডেট হয়েছে");
+        }
+
+        // 2. Logic to update original bill status
+        const history = await getAll('history');
+        // Filter bills for this customer that have due > 0, sorted by newest first
+        const unpaidBills = history.filter(h => h.custNum === dueEntry.phone && parseFloat(h.due) > 0).reverse();
+        
+        let remainingPayment = amountToPay;
+        
+        for(let bill of unpaidBills) {
+            if(remainingPayment <= 0) break;
+            
+            let billDue = parseFloat(bill.due);
+            
+            if(remainingPayment >= billDue) {
+                // Full payment of this bill
+                bill.paid = (parseFloat(bill.paid) + billDue).toFixed(2);
+                bill.due = "0.00";
+                bill.status = "পরিশোধিত";
+                remainingPayment -= billDue;
+            } else {
+                // Partial payment
+                bill.paid = (parseFloat(bill.paid) + remainingPayment).toFixed(2);
+                bill.due = (billDue - remainingPayment).toFixed(2);
+                bill.status = "বাকি"; // Still due
+                remainingPayment = 0;
+            }
+            await put('history', bill); // Save updated bill
+        }
+
+        // 3. Add audit log entry (Optional but good)
+        await add('history', { 
+            ts: Date.now(), 
+            timestampStr: new Date().toLocaleString('en-GB'), 
+            total: 0, 
+            paid: amountToPay, 
+            due: remaining > 0 ? remaining : 0, 
+            status: "বকেয়া পরিশোধ", 
+            custNum: dueEntry.phone, 
+            custName: dueEntry.name, 
+            items: [{name: "বকেয়া পরিশোধ", qty: 1, price: amountToPay, cost: 0}] 
+        });
+        
+        closeModal('payDueModal');
+        loadDueList(); 
+        loadHistory(); 
+    }
+
+    // Start App
+    document.addEventListener('DOMContentLoaded', async () => { await initDB(); await initSystem(); });
+</script>
+<script>
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW failed', err)); }
+</script>
+</body>
+</html>
